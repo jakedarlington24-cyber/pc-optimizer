@@ -21,15 +21,16 @@ from .catalog import (
     ACTIONS_REQUIRING_CONFIRMATION,
     TOOL_FUNCTIONS,
     TOOLS,
+    api_request,
     describe_action,
     run_tool,
 )
 from .history import load_history, undo_change
-from .prompt import MAX_TOKENS, MODEL, SYSTEM_PROMPT
+from .prompt import MAX_TOKENS, MODEL, SYSTEM_PROMPT, estimate_cost
 from .settings import create_restore_point
 
 __all__ = [
     "ACTIONS_NEEDING_RESTORE_POINT", "ACTIONS_REQUIRING_CONFIRMATION", "MAX_TOKENS", "MODEL", "SYSTEM_PROMPT",
-    "TOOL_FUNCTIONS", "TOOLS", "create_restore_point", "describe_action", "get_api_key", "load_history",
-    "run_tool", "save_api_key", "undo_change",
+    "TOOL_FUNCTIONS", "TOOLS", "api_request", "create_restore_point", "describe_action", "estimate_cost",
+    "get_api_key", "load_history", "run_tool", "save_api_key", "undo_change",
 ]

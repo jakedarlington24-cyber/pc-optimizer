@@ -17,6 +17,7 @@ from .settings import (
 from .storage import (
     CLEANUP_CATEGORIES, clean_up, find_duplicate_files, find_largest_files, get_cleanup_report,
 )
+from .prompt import MAX_TOKENS, MODEL, SYSTEM_PROMPT
 from .updates import check_drivers, check_windows_updates
 
 
@@ -220,6 +221,26 @@ def describe_action(name, tool_input):
     except (KeyError, IndexError):
         details = "".join(f"\n  {k}: {v}" for k, v in tool_input.items())
         return f"Run {name}{details}"
+
+
+def api_request(messages):
+    """Keyword arguments for client.messages.create(), shared by the GUI and the CLI.
+
+    Prompt caching: the request renders as tools -> system -> messages. The tool list and system
+    prompt never change, so an explicit cache marker on the system prompt caches both (they're well
+    over Sonnet 5's 1,024-token minimum). The top-level cache_control then caches the growing
+    conversation automatically, so each turn re-reads everything before it at ~10% of the price.
+    Anything that varies between requests (dates, IDs) must never be added to SYSTEM_PROMPT or
+    TOOLS, or every request would miss the cache.
+    """
+    return {
+        "model": MODEL,
+        "max_tokens": MAX_TOKENS,
+        "tools": TOOLS,
+        "system": [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+        "cache_control": {"type": "ephemeral"},
+        "messages": messages,
+    }
 
 
 def run_tool(name, tool_input):

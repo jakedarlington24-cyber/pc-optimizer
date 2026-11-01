@@ -1,9 +1,25 @@
 """Claude model settings and the system prompt that defines the assistant's behaviour."""
 
 MODEL = "claude-sonnet-5"
-
-
 MAX_TOKENS = 4096
+
+# Claude Sonnet 5 prices in US dollars per million tokens. Cache writes cost 1.25x the input price
+# and cache reads 0.1x, so re-sending the same instructions and tools every turn is ~90% cheaper.
+PRICE_INPUT, PRICE_OUTPUT = 2.00, 10.00
+CACHE_WRITE_MULTIPLIER, CACHE_READ_MULTIPLIER = 1.25, 0.10
+
+
+def estimate_cost(usage):
+    """Approximate dollar cost of one API response, from its `usage` block."""
+    if usage is None:
+        return 0.0
+    tokens = lambda name: getattr(usage, name, 0) or 0
+    input_cost = (
+        tokens("input_tokens")
+        + tokens("cache_creation_input_tokens") * CACHE_WRITE_MULTIPLIER
+        + tokens("cache_read_input_tokens") * CACHE_READ_MULTIPLIER
+    ) * PRICE_INPUT
+    return (input_cost + tokens("output_tokens") * PRICE_OUTPUT) / 1_000_000
 
 
 SYSTEM_PROMPT = """You are a friendly PC optimization assistant for a non-expert, acting like a good, honest PC technician.

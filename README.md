@@ -73,6 +73,17 @@ python ask_claude_gui.py
 
 On first launch the app asks for your API key, checks that it works, and saves it for your Windows user account only.
 
+## Cost
+
+Every request re-sends the assistant's instructions and all 36 tool definitions (about 5,400 tokens). With **prompt caching**, those are stored on Anthropic's side and re-read at 10% of the normal price, and the growing conversation is cached the same way (`api_request()` in `pc_tools/catalog.py`). Measured on the real API:
+
+| | First request | Each request after |
+|---|---|---|
+| Without caching | ~$0.011 | ~$0.011 |
+| With caching | ~$0.014 (one-time cache write) | **~$0.001** |
+
+The app shows a running cost for the current chat at the bottom of the window.
+
 ## Tests
 
 ```powershell
@@ -89,7 +100,6 @@ The test suite runs on every push via GitHub Actions (Windows, Python 3.10 and 3
 
 ## Ideas for the future
 
-- Prompt caching to cut API costs
 - A packaged `.exe` so non-developers can try it without installing Python
 - Exportable scan reports to share with a technician
 

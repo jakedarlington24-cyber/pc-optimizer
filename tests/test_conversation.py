@@ -80,10 +80,37 @@ def test_approved_action_runs_with_restore_point_when_needed(monkeypatch, fake_t
     assert tool_results(conversation)["t1"].startswith("Disabled")
 
 
-def test_every_request_sends_the_system_prompt_and_tools(monkeypatch, fake_tools):
+def test_every_request_sends_the_system_prompt_and_tools_with_caching(monkeypatch, fake_tools):
     client = FakeClient([response([text("Hi!")], "end_turn")])
     ask_claude.run_conversation(client, [{"role": "user", "content": "hello"}])
     request = client.requests[0]
-    assert request["system"] == pc_tools.SYSTEM_PROMPT
+    assert request["system"][0]["text"] == pc_tools.SYSTEM_PROMPT
+    assert request["system"][0]["cache_control"] == {"type": "ephemeral"}, "tools + system should be cached"
+    assert request["cache_control"] == {"type": "ephemeral"}, "the conversation should be cached automatically"
     assert request["tools"] == pc_tools.TOOLS
     assert request["model"] == pc_tools.MODEL
+
+
+def test_cached_prefix_is_identical_between_requests():
+    # Caching only works if everything before the conversation is byte-for-byte the same every time
+    first = pc_tools.api_request([{"role": "user", "content": "a"}])
+    second = pc_tools.api_request([{"role": "user", "content": "b"}])
+    for key in ("model", "tools", "system"):
+        assert repr(first[key]) == repr(second[key])
+
+
+def test_cost_estimate_applies_cache_prices():
+    usage = SimpleNamespace(input_tokens=1_000_000, output_tokens=100_000,
+                            cache_creation_input_tokens=1_000_000, cache_read_input_tokens=10_000_000)
+    # $2 uncached + $2.50 cache write + $2 cache read (10M at 0.1x) + $1 output
+    assert ask_claude.estimate_cost(usage) == pytest.approx(7.50)
+    assert ask_claude.estimate_cost(SimpleNamespace(input_tokens=500, output_tokens=0,
+                                                    cache_creation_input_tokens=None,
+                                                    cache_read_input_tokens=None)) == pytest.approx(0.001)
+    assert ask_claude.estimate_cost(None) == 0.0
+
+
+def test_run_conversation_returns_total_cost():
+    usage = SimpleNamespace(input_tokens=1000, output_tokens=0)
+    client = FakeClient([SimpleNamespace(content=[text("Hi")], stop_reason="end_turn", usage=usage)])
+    assert ask_claude.run_conversation(client, [{"role": "user", "content": "hi"}]) == pytest.approx(0.002)

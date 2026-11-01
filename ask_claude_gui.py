@@ -9,12 +9,10 @@ import anthropic
 from pc_tools import (
     ACTIONS_NEEDING_RESTORE_POINT,
     ACTIONS_REQUIRING_CONFIRMATION,
-    MAX_TOKENS,
-    MODEL,
-    SYSTEM_PROMPT,
-    TOOLS,
+    api_request,
     create_restore_point,
     describe_action,
+    estimate_cost,
     get_api_key,
     load_history,
     run_tool,
@@ -247,6 +245,7 @@ class PCAssistantApp:
         self.status.pack(padx=10, pady=(0, 8), fill="x")
 
         self.conversation = []
+        self.chat_cost = 0.0
         self.busy = False
         self.append_message("Assistant", "Hi! Click \"Scan my PC\" for a full check-up, or ask me anything about your PC.")
 
@@ -272,6 +271,8 @@ class PCAssistantApp:
 
     def clear_chat(self):
         self.conversation = []
+        self.chat_cost = 0.0
+        self.status.config(text="")
         self.chat_box.configure(state="normal")
         self.chat_box.delete("1.0", tk.END)
         self.chat_box.configure(state="disabled")
@@ -315,17 +316,12 @@ class PCAssistantApp:
             del self.conversation[turn_start:]
             self.ui(self.append_message, "Error", f"Something went wrong: {e}")
         finally:
-            self.ui(self.set_busy, False)
+            self.ui(self.set_busy, False, f"This chat has cost about ${self.chat_cost:.3f} in API usage.")
 
     def run_conversation(self):
         while True:
-            response = self.client.messages.create(
-                model=MODEL,
-                max_tokens=MAX_TOKENS,
-                system=SYSTEM_PROMPT,
-                tools=TOOLS,
-                messages=self.conversation,
-            )
+            response = self.client.messages.create(**api_request(self.conversation))
+            self.chat_cost += estimate_cost(getattr(response, "usage", None))
             self.conversation.append({"role": "assistant", "content": response.content})
 
             for block in response.content:

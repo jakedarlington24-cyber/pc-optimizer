@@ -3,12 +3,10 @@ import anthropic
 from pc_tools import (
     ACTIONS_NEEDING_RESTORE_POINT,
     ACTIONS_REQUIRING_CONFIRMATION,
-    MAX_TOKENS,
-    MODEL,
-    SYSTEM_PROMPT,
-    TOOLS,
+    api_request,
     create_restore_point,
     describe_action,
+    estimate_cost,
     get_api_key,
     run_tool,
 )
@@ -41,14 +39,11 @@ def handle_tool_call(block):
 
 
 def run_conversation(client, conversation):
+    """Run the tool-use loop until Claude gives a final answer. Returns the approximate cost in dollars."""
+    cost = 0.0
     while True:
-        response = client.messages.create(
-            model=MODEL,
-            max_tokens=MAX_TOKENS,
-            system=SYSTEM_PROMPT,
-            tools=TOOLS,
-            messages=conversation,
-        )
+        response = client.messages.create(**api_request(conversation))
+        cost += estimate_cost(getattr(response, "usage", None))
         conversation.append({"role": "assistant", "content": response.content})
 
         for block in response.content:
@@ -56,7 +51,7 @@ def run_conversation(client, conversation):
                 print(f"\nAssistant: {block.text}\n")
 
         if response.stop_reason != "tool_use":
-            return
+            return cost
 
         tool_results = [
             {"type": "tool_result", "tool_use_id": block.id, "content": handle_tool_call(block)}
@@ -70,6 +65,7 @@ def main():
     client = anthropic.Anthropic(api_key=get_api_key())
     print("PC Assistant — type your question, or 'quit' to exit.\n")
     conversation = []
+    total_cost = 0.0
 
     while True:
         try:
@@ -84,7 +80,8 @@ def main():
         turn_start = len(conversation)
         conversation.append({"role": "user", "content": user_input})
         try:
-            run_conversation(client, conversation)
+            total_cost += run_conversation(client, conversation)
+            print(f"[chat cost so far: about ${total_cost:.3f}]\n")
         except anthropic.APIError as e:
             del conversation[turn_start:]
             print(f"\n[Error talking to Claude: {e}]\n")
