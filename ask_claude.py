@@ -63,7 +63,7 @@ def run_conversation(client, conversation):
 
 def main():
     client = anthropic.Anthropic(api_key=get_api_key())
-    print("PC Assistant — type your question, or 'quit' to exit.\n")
+    print("PC Assistant - type your question, or 'quit' to exit.\n")
     conversation = []
     total_cost = 0.0
 

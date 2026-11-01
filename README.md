@@ -59,7 +59,13 @@ Letting an AI change settings on someone's PC is only OK if it's built to be tru
 | `pc_tools/prompt.py` | Model settings and the system prompt that sets the assistant's rules |
 | `pc_tools/common.py`, `api_key.py` | Shared helpers, and API key storage |
 
-## Getting started
+## Download
+
+**[Download PCAssistant.exe](https://github.com/jakedarlington24-cyber/pc-optimizer/releases/latest)** from the latest release. It's a single file with nothing to install, though you'll still need your own Anthropic API key (see below). The app asks for it on first launch.
+
+Windows may show **"Windows protected your PC"** because the app isn't code-signed (signing certificates cost money). Click **More info → Run anyway**. Each release's `.exe` is built automatically from this source code by GitHub Actions (`.github/workflows/release.yml`), after the tests pass.
+
+## Running from source
 
 **Requirements:** Windows 10 or 11, Python 3.10+, and an [Anthropic API key](https://console.anthropic.com/settings/keys). You pay Anthropic per use; a typical scan-and-explain conversation costs a few cents.
 
@@ -100,7 +106,6 @@ The test suite runs on every push via GitHub Actions (Windows, Python 3.10 and 3
 
 ## Ideas for the future
 
-- A packaged `.exe` so non-developers can try it without installing Python
 - Exportable scan reports to share with a technician
 
 ## License
