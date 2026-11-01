@@ -16,3 +16,6 @@ dist/
 .idea/
 Thumbs.db
 desktop.ini
+
+# Test cache
+.pytest_cache/

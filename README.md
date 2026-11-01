@@ -1,5 +1,7 @@
 # PC Assistant
 
+[![tests](https://github.com/jakedarlington24-cyber/pc-optimizer/actions/workflows/tests.yml/badge.svg)](https://github.com/jakedarlington24-cyber/pc-optimizer/actions/workflows/tests.yml)
+
 **An AI-powered Windows tune-up tool that behaves like an honest technician: it diagnoses first, explains what it finds in plain English, and only changes things one at a time, with your permission, and with an undo button.**
 
 ![PC Assistant screenshot](docs/screenshot.png)
@@ -66,9 +68,22 @@ python ask_claude_gui.py
 
 On first launch the app asks for your API key, checks that it works, and saves it for your Windows user account only.
 
+## Tests
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest
+```
+
+The test suite runs on every push via GitHub Actions (Windows, Python 3.10 and 3.14). It needs no API key and never changes the real PC:
+
+- **Safety rules:** every tool Claude can call is wired up correctly, every action that changes something has a confirmation message, and cleanup can only ever target known-safe folders.
+- **Tool-use loop:** a fake Claude client checks that declined actions never run, approved ones do, and restore points are made when needed.
+- **Undo history:** startup entries, game settings and power plans are restored exactly, using throwaway registry keys and a stubbed `powercfg`.
+- **File tools:** deletion skips files in use, and duplicate detection compares content rather than names. These run in temporary folders.
+
 ## Ideas for the future
 
-- Automated tests and CI on Windows
 - Prompt caching to cut API costs
 - A packaged `.exe` so non-developers can try it without installing Python
 - Exportable scan reports to share with a technician
