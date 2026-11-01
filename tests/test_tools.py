@@ -5,6 +5,7 @@ import tempfile
 import pytest
 
 import pc_tools
+from pc_tools import common, security, settings, storage
 
 
 # ---- Tool registry: every tool Claude can see must be wired up correctly ----
@@ -70,8 +71,8 @@ def test_cleanup_only_targets_known_safe_folders():
         os.path.normcase(os.environ["LOCALAPPDATA"]),
         os.path.normcase(os.environ["WINDIR"]),
     ]
-    for category in pc_tools.CLEANUP_CATEGORIES:
-        for folder in pc_tools._category_folders(category):
+    for category in storage.CLEANUP_CATEGORIES:
+        for folder in storage._category_folders(category):
             folder = os.path.normcase(folder)
             assert any(folder.startswith(root) for root in safe_roots), f"{category} targets {folder}"
             # Only the temp folder may be cleaned at the top level; everything else is a subfolder
@@ -80,7 +81,7 @@ def test_cleanup_only_targets_known_safe_folders():
 
 
 def test_clean_up_rejects_unknown_categories():
-    result = pc_tools.clean_up(["documents"])
+    result = storage.clean_up(["documents"])
     assert "Unknown cleanup categories" in result
 
 
@@ -91,14 +92,14 @@ def test_delete_folder_contents_skips_files_in_use(tmp_path):
     with open(tmp_path / "locked.tmp", "wb") as locked:
         locked.write(b"z" * 500)
         locked.flush()
-        freed, skipped = pc_tools._delete_folder_contents(str(tmp_path))
+        freed, skipped = storage._delete_folder_contents(str(tmp_path))
     assert freed == 3000
     assert skipped == 1
     assert os.listdir(tmp_path) == ["locked.tmp"]
 
 
 def test_delete_folder_contents_ignores_missing_folder(tmp_path):
-    assert pc_tools._delete_folder_contents(str(tmp_path / "nope")) == (0, 0)
+    assert storage._delete_folder_contents(str(tmp_path / "nope")) == (0, 0)
 
 
 # ---- File finders (read-only) ----
@@ -112,7 +113,7 @@ def test_find_duplicate_files_compares_content_not_just_size(tmp_path):
     (tmp_path / "small1.txt").write_bytes(b"same")
     (tmp_path / "small2.txt").write_bytes(b"same")  # under 1 MB, ignored
 
-    result = pc_tools.find_duplicate_files(str(tmp_path))
+    result = storage.find_duplicate_files(str(tmp_path))
     assert "Found 1 sets" in result
     assert "one.bin" in result and "copy.bin" in result
     assert "lookalike.bin" not in result and "small1.txt" not in result
@@ -121,7 +122,7 @@ def test_find_duplicate_files_compares_content_not_just_size(tmp_path):
 def test_find_largest_files_orders_by_size(tmp_path):
     for name, size in [("small.bin", 10), ("big.bin", 5000), ("medium.bin", 500)]:
         (tmp_path / name).write_bytes(b"0" * size)
-    lines = pc_tools.find_largest_files(str(tmp_path), count=2).splitlines()
+    lines = storage.find_largest_files(str(tmp_path), count=2).splitlines()
     assert "big.bin" in lines[1] and "medium.bin" in lines[2]
     assert not any("small.bin" in line for line in lines)
 
@@ -135,7 +136,7 @@ def test_find_largest_files_orders_by_size(tmp_path):
     (int(2.5 * 1024 ** 3), "2.50 GB"),
 ])
 def test_format_size(size, expected):
-    assert pc_tools._format_size(size) == expected
+    assert common.format_size(size) == expected
 
 
 @pytest.mark.parametrize("command, expected_end", [
@@ -145,10 +146,10 @@ def test_format_size(size, expected):
     ("rundll32.exe something.dll,Entry", "rundll32.exe"),
 ])
 def test_exe_from_command(command, expected_end):
-    assert pc_tools._exe_from_command(command).lower().endswith(expected_end.lower())
+    assert security._exe_from_command(command).lower().endswith(expected_end.lower())
 
 
 def test_actions_refuse_inputs_outside_their_allow_lists():
-    assert "isn't on the list" in pc_tools.uninstall_store_app("Microsoft.WindowsCalculator")
-    assert "Unknown page" in pc_tools.open_page("C:\\Windows\\System32\\cmd.exe")
-    assert "Unknown power plan" in pc_tools.set_power_plan("Turbo")
+    assert "isn't on the list" in security.uninstall_store_app("Microsoft.WindowsCalculator")
+    assert "Unknown page" in settings.open_page("C:\\Windows\\System32\\cmd.exe")
+    assert "Unknown power plan" in settings.set_power_plan("Turbo")

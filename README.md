@@ -50,9 +50,14 @@ Letting an AI change settings on someone's PC is only OK if it's built to be tru
 
 | File | Purpose |
 |---|---|
-| `pc_tools.py` | All tools, their JSON schemas, the safety lists, change history/undo, and the system prompt |
 | `ask_claude_gui.py` | The desktop app: chat window, quick-action buttons, confirmation popups, API key setup, History window |
 | `ask_claude.py` | The same assistant in a terminal, handy for testing |
+| `pc_tools/catalog.py` | The tools Claude can call (JSON schemas), the list of actions needing confirmation, and confirmation text |
+| `pc_tools/diagnostics.py`, `storage.py`, `security.py`, `updates.py`, `network.py`, `settings.py` | The tools themselves, grouped by area |
+| `pc_tools/scan.py` | The one-click full scan, which runs every check in parallel |
+| `pc_tools/history.py` | Change log and undo. Each module registers an undo handler for its own kind of change |
+| `pc_tools/prompt.py` | Model settings and the system prompt that sets the assistant's rules |
+| `pc_tools/common.py`, `api_key.py` | Shared helpers, and API key storage |
 
 ## Getting started
 

@@ -2,7 +2,7 @@ import winreg
 
 import pytest
 
-import pc_tools
+from pc_tools import history, settings
 
 TEST_KEY = r"Software\PCAssistantTests"
 
@@ -29,11 +29,11 @@ def _delete_tree(path):
 def sandbox(tmp_path, monkeypatch):
     """Point the change history and every registry location the actions write to at throwaway
     test locations, so tests never touch the real PC's settings."""
-    monkeypatch.setattr(pc_tools, "HISTORY_FILE", str(tmp_path / "history.json"))
-    monkeypatch.setattr(pc_tools, "RUN_KEY", rf"{TEST_KEY}\Run")
-    monkeypatch.setattr(pc_tools, "_GAMEBAR", rf"{TEST_KEY}\GameBar")
-    monkeypatch.setattr(pc_tools, "_GAMEDVR", rf"{TEST_KEY}\GameDVR")
-    monkeypatch.setattr(pc_tools, "_GAMECONFIG", rf"{TEST_KEY}\GameConfig")
+    monkeypatch.setattr(history, "HISTORY_FILE", str(tmp_path / "history.json"))
+    monkeypatch.setattr(settings, "RUN_KEY", rf"{TEST_KEY}\Run")
+    monkeypatch.setattr(settings, "_GAMEBAR", rf"{TEST_KEY}\GameBar")
+    monkeypatch.setattr(settings, "_GAMEDVR", rf"{TEST_KEY}\GameDVR")
+    monkeypatch.setattr(settings, "_GAMECONFIG", rf"{TEST_KEY}\GameConfig")
     _delete_tree(TEST_KEY)
     yield
     _delete_tree(TEST_KEY)
